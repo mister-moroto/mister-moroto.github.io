@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Atemtrainer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Figtree:wght@400;600&display=swap">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #eef3f1;
+    --ink: #142529;
+    --muted: #5d7276;
+    --track: #d5e0dd;
+    --field: #e0e9e6;
+    --inhale: #2f9c87;
+    --hold: #c98a1e;
+    --exhale: #5b73d1;
+    --btn-bg: #142529;
+    --btn-ink: #eef3f1;
+    --dot-fill: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1a1e;
+      --ink: #e8f0ee;
+      --muted: #8ca3a7;
+      --track: #1c3036;
+      --field: #172a30;
+      --inhale: #6fc9b6;
+      --hold: #e8b968;
+      --exhale: #92a8f0;
+      --btn-bg: #e8f0ee;
+      --btn-ink: #0d1a1e;
+      --dot-fill: #0d1a1e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1a1e;
+    --ink: #e8f0ee;
+    --muted: #8ca3a7;
+    --track: #1c3036;
+    --field: #172a30;
+    --inhale: #6fc9b6;
+    --hold: #e8b968;
+    --exhale: #92a8f0;
+    --btn-bg: #e8f0ee;
+    --btn-ink: #0d1a1e;
+    --dot-fill: #0d1a1e;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Figtree", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  main {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 12px 20px 14px;
+    gap: 8px;
+  }
+
+  /* Kopfbereich */
+  header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  select, input[type="number"] {
+    font: inherit;
+    font-size: 16px; /* verhindert Zoom in iOS */
+    color: var(--ink);
+    background: var(--field);
+    border: 0;
+    border-radius: 12px;
+  }
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    width: min(100%, 320px);
+    padding: 12px 40px 12px 16px;
+    font-weight: 600;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1.5l6 6 6-6' fill='none' stroke='%238ca3a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+  }
+  select:focus-visible, input:focus-visible { outline: 3px solid var(--inhale); outline-offset: 2px; }
+  #desc { font-size: 14px; color: var(--muted); text-align: center; min-height: 1.3em; }
+  #custom {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: min(100%, 320px);
+  }
+  #custom[hidden] { display: none; }
+  #custom label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); text-align: center; }
+  #custom input { width: 100%; padding: 10px 4px; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+
+  /* Mitte */
+  .center {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(14px, 3.5vh, 32px);
+  }
+  .stage {
+    position: relative;
+    width: min(84vw, 46vh, 400px);
+    aspect-ratio: 1;
+  }
+  svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .arc {
+    fill: none;
+    stroke-width: 14;
+    opacity: .3;
+    transition: opacity .35s ease;
+  }
+  .arc.on { opacity: 1; }
+  #dot { transition: stroke .2s ease; }
+  .label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+    padding: 0 22%;
+  }
+  #word {
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    font-size: clamp(26px, 8vw, 40px);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  #count {
+    margin-top: 8px;
+    font-size: clamp(18px, 5vw, 24px);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    min-height: 1.4em;
+  }
+  .controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 17px;
+    min-width: 168px;
+    padding: 15px 28px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--btn-bg);
+    color: var(--btn-ink);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:disabled { opacity: .4; }
+  button:active:not(:disabled) { transform: scale(.97); }
+  button:focus-visible { outline: 3px solid var(--inhale); outline-offset: 3px; }
+  #cycles { color: var(--muted); font-size: 15px; min-height: 1.3em; font-variant-numeric: tabular-nums; }
+  .reset {
+    background: transparent;
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 15px;
+    padding: 6px 12px;
+    min-width: 0;
+    visibility: hidden;
+  }
+  .reset.show { visibility: visible; }
+
+  /* Fuß */
+  footer { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .keep {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .keep input { width: 22px; height: 22px; margin: 0; accent-color: var(--inhale); }
+  .keep input:disabled + span { color: var(--muted); }
+  #keepNote { font-size: 13px; color: var(--muted); min-height: 1.2em; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <select id="preset" aria-label="Atemübung"></select>
+    <div id="custom" hidden>
+      <label>Einatmen<input id="c0" type="number" inputmode="numeric" min="0" max="30" step="1"></label>
+      <label>Halten<input id="c1" type="number" inputmode="numeric" min="0" max="30" step="1"></label>
+      <label>Ausatmen<input id="c2" type="number" inputmode="numeric" min="0" max="30" step="1"></label>
+      <label>Halten<input id="c3" type="number" inputmode="numeric" min="0" max="30" step="1"></label>
+    </div>
+    <div id="desc"></div>
+  </header>
+
+  <div class="center">
+    <div class="stage">
+      <svg viewBox="0 0 320 320" role="img" aria-label="Atemring mit kreisendem Punkt">
+        <g id="ring" transform="rotate(-90 160 160)"></g>
+        <circle id="dot" cx="160" cy="48" r="17" fill="var(--dot-fill)" stroke="var(--inhale)" stroke-width="6"/>
+      </svg>
+      <div class="label" aria-live="polite">
+        <div id="word">Bereit</div>
+        <div id="count"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="toggle" type="button">Start</button>
+      <div id="cycles"></div>
+      <button id="reset" class="reset" type="button">Zurücksetzen</button>
+    </div>
+  </div>
+
+  <footer>
+    <label class="keep"><input id="keep" type="checkbox"><span>Display nicht abdunkeln</span></label>
+    <div id="keepNote"></div>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  var R = 112, C = 160, GAP = 0.4; // Ringradius, Mittelpunkt, halbe Lücke (in % des Rings)
+
+  // Phasen-Arten: 0 einatmen, 1 halten, 2 ausatmen, 3 halten
+  var KINDS = [
+    { name: "Einatmen",      verb: "einatmen", color: "--inhale" },
+    { name: "Luft anhalten", verb: "halten",   color: "--hold" },
+    { name: "Ausatmen",      verb: "ausatmen", color: "--exhale" },
+    { name: "Luft anhalten", verb: "halten",   color: "--hold" }
+  ];
+  var PRESETS = [
+    { id: "424",    label: "4-2-4",                   v: [4, 2, 4, 0] },
+    { id: "478",    label: "4-7-8",                   v: [4, 7, 8, 0] },
+    { id: "box",    label: "Box Breathing (4-4-4-4)", v: [4, 4, 4, 4] },
+    { id: "custom", label: "Benutzerdefiniert",       v: null }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var presetEl = $("preset"), customEl = $("custom"), descEl = $("desc"),
+      ringEl = $("ring"), dot = $("dot"), word = $("word"), count = $("count"),
+      cycles = $("cycles"), toggle = $("toggle"), reset = $("reset"),
+      keep = $("keep"), keepNote = $("keepNote");
+  var inputs = [$("c0"), $("c1"), $("c2"), $("c3")];
+
+  // ---- Einstellungen (nur pro Gerät, mit Fallback) ----
+  var state = { preset: "424", custom: [4, 4, 4, 0], keep: true };
+  try {
+    var saved = JSON.parse(localStorage.getItem("atemtrainer.v1") || "null");
+    if (saved) {
+      if (PRESETS.some(function (p) { return p.id === saved.preset; })) state.preset = saved.preset;
+      if (Array.isArray(saved.custom) && saved.custom.length === 4) state.custom = saved.custom.map(clampSec);
+      if (typeof saved.keep === "boolean") state.keep = saved.keep;
+    }
+  } catch (e) {}
+  function save() {
+    try { localStorage.setItem("atemtrainer.v1", JSON.stringify(state)); } catch (e) {}
+  }
+  function clampSec(n) {
+    n = Math.round(Number(n));
+    if (!isFinite(n)) n = 0;
+    return Math.max(0, Math.min(30, n));
+  }
+
+  // ---- Ablauf ----
+  var phases = [], total = 0;
+  var running = false, elapsed = 0, startedAt = 0, raf = 0, lastPhase = -1;
+  var arcs = [];
+
+  function currentValues() {
+    var p = PRESETS.filter(function (x) { return x.id === state.preset; })[0];
+    return p.v || state.custom;
+  }
+
+  function buildRing() {
+    var vals = currentValues();
+    phases = []; total = 0;
+    vals.forEach(function (d, k) {
+      if (d > 0) { total += d; phases.push({ dur: d, kind: k, end: total }); }
+    });
+    while (ringEl.firstChild) ringEl.removeChild(ringEl.firstChild);
+    arcs = [];
+    var start = 0;
+    phases.forEach(function (p) {
+      var share = (p.dur / total) * 100;
+      var len = Math.max(share - GAP * 2, 0.5);
+      var c = document.createElementNS(NS, "circle");
+      c.setAttribute("class", "arc");
+      c.setAttribute("cx", C); c.setAttribute("cy", C); c.setAttribute("r", R);
+      c.setAttribute("pathLength", "100");
+      c.setAttribute("stroke-dasharray", len.toFixed(3) + " " + (100 - len).toFixed(3));
+      c.setAttribute("stroke-dashoffset", (-(start + GAP)).toFixed(3));
+      c.style.stroke = "var(" + KINDS[p.kind].color + ")";
+      ringEl.appendChild(c);
+      arcs.push(c);
+      start += share;
+    });
+    descEl.textContent = total > 0
+      ? phases.map(function (p) { return p.dur + " s " + KINDS[p.kind].verb; }).join(", ")
+      : "Mindestens eine Phase braucht Sekunden.";
+    toggle.disabled = total === 0;
+  }
+
+  function place(t) {
+    var a = total ? (t / (total * 1000)) * 2 * Math.PI - Math.PI / 2 : -Math.PI / 2;
+    dot.setAttribute("cx", (C + R * Math.cos(a)).toFixed(2));
+    dot.setAttribute("cy", (C + R * Math.sin(a)).toFixed(2));
+  }
+
+  function setPhase(i) {
+    if (i === lastPhase) return;
+    lastPhase = i;
+    arcs.forEach(function (el, k) { el.classList.toggle("on", k === i); });
+    if (i >= 0) {
+      var kind = KINDS[phases[i].kind];
+      dot.style.stroke = "var(" + kind.color + ")";
+      word.textContent = kind.name;
+    }
+  }
+
+  function render(totalMs) {
+    var cycleMs = total * 1000;
+    var t = totalMs % cycleMs;
+    var i = 0;
+    while (i < phases.length - 1 && t >= phases[i].end * 1000) i++;
+    setPhase(i);
+    place(t);
+    count.textContent = Math.ceil((phases[i].end * 1000 - t) / 1000);
+    var n = Math.floor(totalMs / cycleMs);
+    cycles.textContent = n > 0 ? n + (n === 1 ? " Atemzug" : " Atemzüge") : "";
+  }
+
+  function frame(now) {
+    if (!running) return;
+    render(elapsed + (now - startedAt));
+    raf = requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (!total) return;
+    running = true;
+    startedAt = performance.now();
+    toggle.textContent = "Pause";
+    reset.classList.add("show");
+    raf = requestAnimationFrame(frame);
+  }
+
+  function pause() {
+    elapsed += performance.now() - startedAt;
+    running = false;
+    cancelAnimationFrame(raf);
+    toggle.textContent = "Weiter";
+  }
+
+  function doReset() {
+    running = false;
+    cancelAnimationFrame(raf);
+    elapsed = 0;
+    lastPhase = -1;
+    buildRing();
+    dot.style.stroke = "var(--inhale)";
+    place(0);
+    word.textContent = "Bereit";
+    count.textContent = "";
+    cycles.textContent = "";
+    toggle.textContent = "Start";
+    reset.classList.remove("show");
+  }
+
+  // ---- Übungsauswahl ----
+  PRESETS.forEach(function (p) {
+    var o = document.createElement("option");
+    o.value = p.id; o.textContent = p.label;
+    presetEl.appendChild(o);
+  });
+  presetEl.value = state.preset;
+  function syncCustomUi() {
+    customEl.hidden = state.preset !== "custom";
+    inputs.forEach(function (el, k) { el.value = state.custom[k]; });
+  }
+  presetEl.addEventListener("change", function () {
+    state.preset = presetEl.value;
+    save(); syncCustomUi(); doReset();
+  });
+  inputs.forEach(function (el, k) {
+    el.addEventListener("input", function () {
+      if (el.value === "") return;
+      state.custom[k] = clampSec(el.value);
+      save(); doReset();
+    });
+    el.addEventListener("blur", function () { el.value = state.custom[k]; });
+  });
+
+  // ---- Display an lassen (Wake Lock) ----
+  var wake = null, wakeSupported = "wakeLock" in navigator;
+  function syncWake() {
+    if (!wakeSupported) return;
+    if (state.keep && !document.hidden) {
+      if (wake) return;
+      navigator.wakeLock.request("screen").then(function (l) {
+        wake = l;
+        l.addEventListener("release", function () { wake = null; });
+        if (!(state.keep && !document.hidden)) releaseWake();
+      }).catch(function () {
+        keepNote.textContent = "Das Display konnte nicht wachgehalten werden.";
+      });
+    } else {
+      releaseWake();
+    }
+  }
+  function releaseWake() {
+    try { if (wake) { wake.release(); } } catch (e) {}
+    wake = null;
+  }
+  keep.checked = state.keep;
+  if (!wakeSupported) {
+    keep.disabled = true;
+    keepNote.textContent = "Dieser Browser unterstützt das nicht.";
+  }
+  keep.addEventListener("change", function () {
+    state.keep = keep.checked;
+    keepNote.textContent = "";
+    save(); syncWake();
+  });
+
+  toggle.addEventListener("click", function () { running ? pause() : start(); });
+  reset.addEventListener("click", doReset);
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden && running) pause();
+    syncWake();
+  });
+
+  syncCustomUi();
+  doReset();
+  syncWake();
+})();
+</script>
+</body>
+</html>
